@@ -5,10 +5,10 @@
  */
 declare(strict_types=1);
 
-namespace Magento\InventoryReservations\Command;
+namespace Magento\InventoryReservationCli\Command;
 
-use Magento\InventoryReservations\Model\GetOrderInPendingState as GetOrderInPendingStateAlias;
-use Magento\InventoryReservations\Model\GetOrderWithBrokenReservation;
+use Magento\InventoryReservationCli\Model\GetOrderInPendingState as GetOrderInPendingStateAlias;
+use Magento\InventoryReservationCli\Model\GetOrderWithBrokenReservation;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Model\Order;
 use Symfony\Component\Console\Command\Command;
@@ -34,9 +34,9 @@ class PendingOrderInconsistency extends Command
         GetOrderWithBrokenReservation $getOrderWithBrokenReservation,
         GetOrderInPendingStateAlias $getOrderInPendingState
     ) {
-        parent::__construct();
         $this->getOrderWithBrokenReservation = $getOrderWithBrokenReservation;
         $this->getOrderInPendingState = $getOrderInPendingState;
+        parent::__construct();
     }
 
     protected function configure()

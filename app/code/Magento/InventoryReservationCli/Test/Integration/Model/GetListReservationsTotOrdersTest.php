@@ -7,19 +7,19 @@ declare(strict_types=1);
 
 namespace Magento\InventoryReservations\Test\Integration\Model;
 
-use Magento\InventoryReservations\Model\GetOrderInPendingState;
-use Magento\InventoryReservations\Model\GetOrderWithBrokenReservation;
+use Magento\InventoryReservationCli\Model\GetOrderInPendingState;
+use Magento\InventoryReservationCli\Model\GetOrderWithBrokenReservation;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use PHPUnit\Framework\TestCase;
 use Magento\TestFramework\Helper\Bootstrap;
+use Magento\Framework\Registry;
 
 class GetListReservationsTotOrdersTest extends TestCase
 {
-
     /**
-     * @magentoDataFixture ../../../../app/code/Magento/InventoryReservations/Test/Integration/_fixtures/order_with_reservation.php
+     * @magentoDataFixture ../../../../app/code/Magento/InventoryReservationCli/Test/Integration/_fixtures/order_with_reservation.php
      */
     public function testShouldNotFindAnyInconsistency(): void
     {
@@ -41,7 +41,7 @@ class GetListReservationsTotOrdersTest extends TestCase
     }
 
     /**
-     * @magentoDataFixture ../../../../app/code/Magento/InventoryReservations/Test/Integration/_fixtures/order_pending_with_reservation.php
+     * @magentoDataFixture ../../../../app/code/Magento/InventoryReservationCli/Test/Integration/_fixtures/order_pending_with_reservation.php
      * @magentoDbIsolation enabled
      */
     public function testShouldReturnOneReservationInconsistency(): void
@@ -67,11 +67,17 @@ class GetListReservationsTotOrdersTest extends TestCase
     {
         $objectManager = Bootstrap::getObjectManager();
 
+        /** @var \Magento\Framework\Registry $registry */
+        $registry = $objectManager->get(Registry::class);
+        $registry->unregister('isSecureArea');
+        $registry->register('isSecureArea', true);
         $orderCollection = $objectManager->create(OrderCollectionFactory::class)->create();
 
         /** @var Order $order */
         foreach ($orderCollection as $order){
             $order->delete();
         }
+        $registry->unregister('isSecureArea');
+        $registry->register('isSecureArea', false);
     }
 }

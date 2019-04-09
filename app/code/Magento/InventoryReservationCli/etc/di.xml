@@ -9,7 +9,7 @@
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="inventory_pending_order_inconsistency" xsi:type="object">Magento\InventoryReservations\Command\PendingOrderInconsistency</item>
+                <item name="inventory_pending_order_inconsistency" xsi:type="object">Magento\InventoryReservationCli\Command\PendingOrderInconsistency</item>
             </argument>
         </arguments>
     </type>
