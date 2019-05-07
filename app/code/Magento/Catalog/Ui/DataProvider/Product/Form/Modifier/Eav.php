@@ -11,6 +11,7 @@ use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Catalog\Model\Attribute\ScopeOverriddenValue;
 use Magento\Catalog\Model\Locator\LocatorInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\Product\Type as ProductType;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as EavAttribute;
 use Magento\Catalog\Model\ResourceModel\Eav\AttributeFactory as EavAttributeFactory;
 use Magento\Catalog\Ui\DataProvider\CatalogEavValidationRules;
@@ -20,8 +21,10 @@ use Magento\Eav\Model\Config;
 use Magento\Eav\Model\ResourceModel\Entity\Attribute\Group\CollectionFactory as GroupCollectionFactory;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SortOrderBuilder;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\Filter\Translit;
 use Magento\Framework\Locale\CurrencyInterface;
 use Magento\Framework\Stdlib\ArrayManager;
@@ -213,6 +216,11 @@ class Eav extends AbstractModifier
     private $scopeConfig;
 
     /**
+     * @var AuthorizationInterface
+     */
+    private $auth;
+
+    /**
      * Eav constructor.
      * @param LocatorInterface $locator
      * @param CatalogEavValidationRules $catalogEavValidationRules
@@ -236,6 +244,7 @@ class Eav extends AbstractModifier
      * @param CompositeConfigProcessor|null $wysiwygConfigProcessor
      * @param ScopeConfigInterface|null $scopeConfig
      * @param AttributeCollectionFactory $attributeCollectionFactory
+     * @param AuthorizationInterface|null $auth
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
@@ -260,7 +269,8 @@ class Eav extends AbstractModifier
         $attributesToEliminate = [],
         CompositeConfigProcessor $wysiwygConfigProcessor = null,
         ScopeConfigInterface $scopeConfig = null,
-        AttributeCollectionFactory $attributeCollectionFactory = null
+        AttributeCollectionFactory $attributeCollectionFactory = null,
+        ?AuthorizationInterface $auth = null
     ) {
         $this->locator = $locator;
         $this->catalogEavValidationRules = $catalogEavValidationRules;
@@ -281,12 +291,12 @@ class Eav extends AbstractModifier
         $this->dataPersistor = $dataPersistor;
         $this->attributesToDisable = $attributesToDisable;
         $this->attributesToEliminate = $attributesToEliminate;
-        $this->wysiwygConfigProcessor = $wysiwygConfigProcessor ?: \Magento\Framework\App\ObjectManager::getInstance()
-            ->get(CompositeConfigProcessor::class);
-        $this->scopeConfig = $scopeConfig ?: \Magento\Framework\App\ObjectManager::getInstance()
-        ->get(ScopeConfigInterface::class);
+        $this->wysiwygConfigProcessor = $wysiwygConfigProcessor
+            ?: ObjectManager::getInstance()->get(CompositeConfigProcessor::class);
+        $this->scopeConfig = $scopeConfig ?: ObjectManager::getInstance()->get(ScopeConfigInterface::class);
         $this->attributeCollectionFactory = $attributeCollectionFactory
-            ?: \Magento\Framework\App\ObjectManager::getInstance()->get(AttributeCollectionFactory::class);
+            ?: ObjectManager::getInstance()->get(AttributeCollectionFactory::class);
+        $this->auth = $auth ?? ObjectManager::getInstance()->get(AuthorizationInterface::class);
     }
 
     /**
@@ -419,7 +429,7 @@ class Eav extends AbstractModifier
 
             foreach ($attributes as $attribute) {
                 if (null !== ($attributeValue = $this->setupAttributeData($attribute))) {
-                    if ($attribute->getFrontendInput() === 'price' && is_scalar($attributeValue)) {
+                    if ($this->isPriceAttribute($attribute, $attributeValue)) {
                         $attributeValue = $this->formatPrice($attributeValue);
                     }
                     $data[$productId][self::DATA_SOURCE_DEFAULT][$attribute->getAttributeCode()] = $attributeValue;
@@ -428,6 +438,32 @@ class Eav extends AbstractModifier
         }
 
         return $data;
+    }
+
+    /**
+     * Obtain if given attribute is a price
+     *
+     * @param \Magento\Catalog\Api\Data\ProductAttributeInterface $attribute
+     * @param string|integer $attributeValue
+     * @return bool
+     */
+    private function isPriceAttribute(ProductAttributeInterface $attribute, $attributeValue)
+    {
+        return $attribute->getFrontendInput() === 'price'
+            && is_scalar($attributeValue)
+            && !$this->isBundleSpecialPrice($attribute);
+    }
+
+    /**
+     * Obtain if current product is bundle and given attribute is special_price
+     *
+     * @param \Magento\Catalog\Api\Data\ProductAttributeInterface $attribute
+     * @return bool
+     */
+    private function isBundleSpecialPrice(ProductAttributeInterface $attribute)
+    {
+        return $this->locator->getProduct()->getTypeId() === ProductType::TYPE_BUNDLE
+            && $attribute->getAttributeCode() === ProductAttributeInterface::CODE_SPECIAL_PRICE;
     }
 
     /**
@@ -533,7 +569,7 @@ class Eav extends AbstractModifier
      * Loads attributes for specified groups at once
      *
      * @param AttributeGroupInterface[] $groups
-     * @return @return ProductAttributeInterface[]
+     * @return ProductAttributeInterface[]
      */
     private function loadAttributesForGroups(array $groups)
     {
@@ -649,7 +685,10 @@ class Eav extends AbstractModifier
         // TODO: Refactor to $attribute->getOptions() when MAGETWO-48289 is done
         $attributeModel = $this->getAttributeModel($attribute);
         if ($attributeModel->usesSource()) {
-            $options = $attributeModel->getSource()->getAllOptions();
+            $options = $attributeModel->getSource()->getAllOptions(true, true);
+            foreach ($options as &$option) {
+                $option['__disableTmpl'] = true;
+            }
             $meta = $this->arrayManager->merge($configPath, $meta, [
                 'options' => $this->convertOptionsValueToString($options),
             ]);
@@ -701,6 +740,23 @@ class Eav extends AbstractModifier
                 // Gallery attribute is being handled by "Images And Videos" section
                 $meta = [];
                 break;
+        }
+
+        //Checking access to design config.
+        $designDesignGroups = ['design', 'schedule-design-update'];
+        if (in_array($groupCode, $designDesignGroups, true)) {
+            if (!$this->auth->isAllowed('Magento_Catalog::edit_product_design')) {
+                $meta = $this->arrayManager->merge(
+                    $configPath,
+                    $meta,
+                    [
+                        'disabled' => true,
+                        'validation' => ['required' => false],
+                        'required' => false,
+                        'serviceDisabled' => true,
+                    ]
+                );
+            }
         }
 
         return $meta;
