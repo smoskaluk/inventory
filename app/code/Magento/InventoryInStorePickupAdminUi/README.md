@@ -17,7 +17,7 @@ The `InventoryInStorePickupAdminUi` module contains several extension points.
 
 ### Layouts
 
-You can extend and override layouts defined in the `view/adminhtml/layout`  directory.
+You can extend and override layouts defined in the `view/adminhtml/layout` directory.
 
 ### UI Components
 

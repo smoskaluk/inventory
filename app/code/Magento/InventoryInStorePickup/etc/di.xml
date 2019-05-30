@@ -18,13 +18,10 @@
     <preference for="Magento\InventoryInStorePickupApi\Api\GetNearbySourcesByPostcodeInterface"
             type="Magento\InventoryInStorePickup\Model\GetNearbySourcesByPostcode"/>
     <preference for="Magento\InventoryInStorePickupApi\Api\Data\PickupLocationInterface" type="Magento\InventoryInStorePickup\Model\PickupLocation" />
-    <type name="Magento\InventoryInStorePickupApi\Model\GetNearbySourcesByPostcode">
-        <arguments>
-            <argument name="providers" xsi:type="array">
-                <item name="offline" xsi:type="object">Magento\InventoryInStorePickup\Model\DistanceProvider\Offline\GetNearbySourcesByPostcode</item>
-            </argument>
-        </arguments>
-    </type>
+    <preference for="Magento\InventoryInStorePickupApi\Api\GetNearbyPickupLocationsInterface" type="Magento\InventoryInStorePickup\Model\GetNearbyPickupLocations"/>
+    <preference for="Magento\InventoryInStorePickupApi\Api\Data\AddressInterface" type="Magento\InventoryInStorePickup\Model\Address" />
+    <preference for="Magento\InventoryInStorePickupApi\Api\GetPickupLocationsAssignedToStockOrderedByPriorityInterface" type="Magento\InventoryInStorePickup\Model\GetPickupLocationsAssignedToStockOrderedByPriority" />
+    <preference for="Magento\InventoryInStorePickupApi\Api\GetIsAnyPickupLocationAvailableInterface" type="Magento\InventoryInStorePickup\Model\GetIsAnyPickupLocationAvailable"/>
 
     <preference for="Magento\InventoryInStorePickupApi\Api\NotifyOrderIsReadyForPickupInterface"
             type="Magento\InventoryInStorePickup\Model\NotifyOrderIsReadyForPickup"/>
@@ -35,4 +32,16 @@
             <argument name="identityContainer" xsi:type="object">\Magento\InventoryInStorePickup\Model\Order\Email\Container\ReadyForPickupIdentity</argument>
         </arguments>
     </type>
+    <preference for="Magento\InventoryInStorePickupApi\Model\Mapper\CreateFromSourceInterface" type="Magento\InventoryInStorePickup\Model\PickupLocation\Mapper\CreateFromSource" />
+    <type name="Magento\InventoryInStorePickup\Model\SourceSelection\GetActiveStorePickupOrdersBySource">
+        <arguments>
+            <argument name="statesToFilter" xsi:type="array">
+                <item xsi:type="const" name="complete">Magento\Sales\Model\Order::STATE_COMPLETE</item>
+                <item xsi:type="const" name="closed">Magento\Sales\Model\Order::STATE_CLOSED</item>
+                <item xsi:type="const" name="canceled">Magento\Sales\Model\Order::STATE_CANCELED</item>
+            </argument>
+        </arguments>
+    </type>
+    <preference for="Magento\InventorySourceSelectionApi\Model\GetSourceItemQtyAvailableInterface"
+            type="Magento\InventoryInStorePickup\Model\SourceSelection\GetSourceItemQtyAvailableService"/>
 </config>

@@ -15,8 +15,6 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 $searchCriteriaBuilder = Bootstrap::getObjectManager()->get(SearchCriteriaBuilder::class);
 /** @var CartRepositoryInterface $cartRepository */
 $cartRepository = Bootstrap::getObjectManager()->get(CartRepositoryInterface::class);
-/** @var ProductRepositoryInterface $productRepository */
-$productRepository = Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class);
 /** @var CartManagementInterface $cartManagement */
 $cartManagement = Bootstrap::getObjectManager()->get(CartManagementInterface::class);
 
@@ -25,13 +23,4 @@ $searchCriteria = $searchCriteriaBuilder
     ->create();
 $cart = current($cartRepository->getList($searchCriteria)->getItems());
 
-$product = $productRepository->get('SKU-1');
-$requestData = [
-    'product' => $product->getProductId(),
-    'qty' => 3.5
-];
-$request = new \Magento\Framework\DataObject($requestData);
-$cart->addProduct($product, $request);
-
-$cartRepository->save($cart);
 $cartManagement->placeOrder($cart->getId());
