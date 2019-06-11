@@ -15,6 +15,7 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Webapi\Rest\Request;
 use Magento\Integration\Api\CustomerTokenServiceInterface;
 use Magento\InventoryApi\Api\StockRepositoryInterface;
+use Magento\InventoryReservationsApi\Model\CleanupReservationsInterface;
 use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
 use Magento\InventorySalesApi\Api\Data\SalesChannelInterfaceFactory;
 use Magento\Store\Api\WebsiteRepositoryInterface;
@@ -55,11 +56,18 @@ abstract class OrderPlacementBase extends WebapiAbstract
     private $storeViewCode = 'default';
 
     /**
+     * @var CleanupReservationsInterface
+     */
+    private $cleanupReservations;
+
+    /**
      * @inheritDoc
      */
     protected function setUp()
     {
         $this->objectManager = Bootstrap::getObjectManager();
+        $this->cleanupReservations = Bootstrap::getObjectManager()->get(CleanupReservationsInterface::class);
+        $this->cleanupReservations->execute();
     }
 
     /**
