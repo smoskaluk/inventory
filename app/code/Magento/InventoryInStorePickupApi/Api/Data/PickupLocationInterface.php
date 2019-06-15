@@ -19,6 +19,8 @@ use Magento\Framework\Api\ExtensibleDataInterface;
 interface PickupLocationInterface extends ExtensibleDataInterface
 {
     const IS_PICKUP_LOCATION_ACTIVE = 'is_pickup_location_active';
+    const FRONTEND_NAME = 'frontend_name';
+    const FRONTEND_DESCRIPTION = 'frontend_description';
 
     /**
      * Get source code of Pickup Location
@@ -126,13 +128,6 @@ interface PickupLocationInterface extends ExtensibleDataInterface
     public function getPhone(): ?string;
 
     /**
-     * Get Pickup Location open hours.
-     *
-     * @return string[]|null
-     */
-    public function getOpenHours(): ?array;
-
-    /**
      * Set Extension Attributes for Pickup Location.
      *
      * @param \Magento\InventoryInStorePickupApi\Api\Data\PickupLocationExtensionInterface|null $extensionAttributes
@@ -147,5 +142,4 @@ interface PickupLocationInterface extends ExtensibleDataInterface
      * @return \Magento\InventoryInStorePickupApi\Api\Data\PickupLocationExtensionInterface|null
      */
     public function getExtensionAttributes(): ?PickupLocationExtensionInterface;
-
 }
