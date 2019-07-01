@@ -119,7 +119,7 @@ class GetNearbyPickupLocationsOfflineTest extends TestCase
     public function executeDataProvider(): array
     {
         return [
-//            [ /* Data set #0 */
+            [ /* Data set #0 */
 //                [
 //                    'country' => 'DE',
 //                    'postcode' => '81671',
